@@ -17,13 +17,45 @@ const io = new Server(server, {
 
 app.use(cors());
 app.use(express.json());
+async function getUser(userId) {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  if (error) {
+    return null;
+  }
+  return data;
+}
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  socket.on('join-room', (roomId) => {
+  socket.on('join-room', async (roomId, userId) => {
     socket.join(String(roomId));
-    console.log(`User joined room ${roomId}`);
+
+    console.log(`Socket joined room ${roomId}`);
+
+    if (!userId) {
+      console.log('No userId provided yet, skipping user role broadcast');
+      return;
+    }
+
+    const user = await getUser(userId);
+
+    if (!user) {
+      console.log(`User ${userId} not found`);
+      return;
+    }
+
+    io.to(String(roomId)).emit('user-joined', {
+      id: user.id,
+      role: user.role
+    });
+
+    console.log(`User ${userId} joined room ${roomId}`);
   });
 
   socket.on('disconnect', () => {
@@ -103,7 +135,15 @@ app.get('/rooms', async (req, res) => {
     res.status(500).json({ error: err.message || 'Failed to get rooms' });
   }
 });
+app.get('/users/:id', async (req, res) => {
+  const user = await getUser(req.params.id);
 
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  res.json(user);
+});
 app.post('/rooms', async (req, res) => {
   try {
     const { name, host_user_id } = req.body;
@@ -182,8 +222,16 @@ app.post('/vote', async (req, res) => {
             return res.status(400).json({ error: 'song_id, user_id, and vote_value are required' })
         }
 
-        if (vote_value !== 1 && vote_value !== -1) {
-            return res.status(400).json({ error: 'vote_value must be 1 or -1' })
+        const user = await getUser(user_id);
+
+        if (!user) {
+            return res.status(401).json({ error: 'User not found' });
+        }
+
+        if (user.role === 'free' && vote_value === -1) {
+            return res.status(403).json({
+                error: 'Only premium users can downvote songs'
+            });
         }
 
         const { data, error } = await supabase
