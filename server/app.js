@@ -1,10 +1,35 @@
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
+const { Server } = require('socket.io');
 require('dotenv').config();
 const supabase = require('./supabaseClient');
 const app = express();
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
+
 app.use(cors());
 app.use(express.json());
+
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  socket.on('join-room', (roomId) => {
+    socket.join(String(roomId));
+    console.log(`User joined room ${roomId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
 
 app.get('/', (req, res) => {
   res.json({ message: 'Server is running XD' });
@@ -138,9 +163,8 @@ app.post('/songs', async (req, res) => {
             .from('songs')
             .insert([{ room_id, title, url }])
             .select()
-
         if (error) throw error
-
+        io.to(String(room_id)).emit('song-added', data[0]);
         res.json({
             message: 'Song added successfully',
             data
@@ -168,7 +192,7 @@ app.post('/vote', async (req, res) => {
             .select()
 
         if (error) throw error
-
+        io.emit('vote-added', data[0]);
         res.json({
             message: 'Vote added successfully',
             data
@@ -179,6 +203,6 @@ app.post('/vote', async (req, res) => {
 })
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
