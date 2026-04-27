@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSE264 Music Rooms</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Music Room Dashboard</h1>
+    <p class="muted">Frontend for your current Express + Supabase + Socket.IO backend.</p>
+
+    <section class="card">
+      <h2>Server Status</h2>
+      <button id="checkServerBtn">Check /</button>
+      <button id="checkSupabaseBtn">Check /test-supabase</button>
+      <pre id="statusOutput"></pre>
+    </section>
+
+    <section class="card">
+      <h2>Rooms</h2>
+      <form id="createRoomForm" class="row">
+        <input id="roomName" placeholder="Room name" required />
+        <input id="hostUserId" placeholder="Host user id" required />
+        <button type="submit">Create Room</button>
+      </form>
+      <button id="loadRoomsBtn">Refresh Rooms</button>
+      <ul id="roomsList"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Add Song</h2>
+      <form id="addSongForm" class="row">
+        <input id="songRoomId" type="number" placeholder="Room id" required />
+        <input id="songTitle" placeholder="Song title" required />
+        <input id="songUrl" placeholder="Song URL" required />
+        <button type="submit">Add Song</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Vote</h2>
+      <form id="voteForm" class="row">
+        <input id="voteSongId" type="number" placeholder="Song id" required />
+        <input id="voteUserId" placeholder="User id" required />
+        <select id="voteValue">
+          <option value="1">Upvote (+1)</option>
+          <option value="-1">Downvote (-1)</option>
+        </select>
+        <button type="submit">Submit Vote</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Ranked Songs by Room</h2>
+      <form id="rankedSongsForm" class="row">
+        <input id="rankedRoomId" type="number" placeholder="Room id" required />
+        <button type="submit">Load Ranked Songs</button>
+      </form>
+      <ul id="rankedSongsList"></ul>
+    </section>
+
+    <section class="card">
+      <h2>iTunes Search</h2>
+      <form id="searchForm" class="row">
+        <input id="searchQuery" placeholder="Search songs (e.g. drake)" required />
+        <button type="submit">Search</button>
+      </form>
+      <ul id="searchResults"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Socket Events</h2>
+      <button id="joinRoomBtn">Join Room 1</button>
+      <ul id="socketEvents"></ul>
+    </section>
+  </main>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

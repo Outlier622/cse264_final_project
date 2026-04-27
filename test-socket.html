@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Socket Test</title>
+</head>
+<body>
+  <h1>Socket.IO Test</h1>
+  <button onclick="joinRoom()">Join Room 1</button>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    const socket = io("http://localhost:3001");
+
+    socket.on("connect", () => {
+      console.log("Connected:", socket.id);
+    });
+
+    function joinRoom() {
+      socket.emit("join-room", "1");
+      console.log("Joined room 1");
+    }
+
+    socket.on("song-added", (song) => {
+      console.log("New song received:", song);
+      alert("New song: " + song.title);
+    });
+
+    socket.on("vote-added", (vote) => {
+      console.log("Vote received:", vote);
+      alert("New vote: " + vote.vote_value);
+    });
+  </script>
+</body>
+</html>
