@@ -574,7 +574,7 @@ function App() {
                         ))}
                       </select>
                       <button type="button" onClick={() => submitScoreForSong(song.id)}>Submit Score</button>
-                      {profile.role === 'premium' && (
+                      {profile.role === 'admin' && (
                         <button type="button" onClick={() => deleteSong(song.id)}>Delete Song</button>
                       )}
                     </div>

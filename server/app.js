@@ -7,11 +7,11 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
 const supabase = require('./supabaseClient');
-const app = express();
+const app = express();// Setup express app
 
-const server = http.createServer(app);
+const server = http.createServer(app);// Create HTTP server for socket.io
 
-const io = new Server(server, {
+const io = new Server(server, {// Setup socket.io realtime server
   cors: {
     origin: '*',
     methods: ['GET', 'POST']
@@ -20,8 +20,8 @@ const io = new Server(server, {
 
 app.use(cors());
 app.use(express.json());
-app.use('/app', express.static(path.join(__dirname, '..', 'client')));
-
+app.use('/app', express.static(path.join(__dirname, '..', 'client')));// Serve frontend files
+// Get user by id or username
 async function getUser(userId) {
   if (!userId) return null;
 
@@ -53,15 +53,15 @@ async function getUser(userId) {
 
   return userByUsername;
 }
-
+// Check if user can downvote songs
 function canDownvote(user) {
   return ['admin', 'premium'].includes(String(user?.role || '').toLowerCase());
 }
-
+// Check if user can delete songs
 function canDeleteSong(user) {
-  return String(user?.role || '').toLowerCase() === 'premium';
+  return String(user?.role || '').toLowerCase() === 'admin';
 }
-
+// Automatically create extra database tables if missing
 async function ensureExtraTables() {
   try {
     const { error } = await supabase.rpc('exec_sql', {
@@ -86,7 +86,7 @@ async function ensureExtraTables() {
     console.warn('Skipping auto table creation:', err.message);
   }
 }
-
+// Handle user joining a music room
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
@@ -114,16 +114,16 @@ io.on('connection', (socket) => {
 
     console.log(`User ${userId} joined room ${roomId}`);
   });
-
+  // Handle socket disconnect
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });
 });
-
+// Test server route
 app.get('/', (req, res) => {
   res.json({ message: 'Server is running XD' });
 });
-
+// User signup route
 app.post('/auth/signup', async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -181,7 +181,7 @@ app.post('/auth/signup', async (req, res) => {
     return res.status(500).json({ error: err.message || 'Signup failed' });
   }
 });
-
+// User login route
 app.post('/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -216,7 +216,7 @@ app.post('/auth/login', async (req, res) => {
     return res.status(500).json({ error: err.message || 'Login failed' });
   }
 });
-
+// Get user information
 app.get('/users/:id', async (req, res) => {
   try {
     const user = await getUser(req.params.id);
@@ -236,7 +236,7 @@ app.get('/users/:id', async (req, res) => {
     return res.status(500).json({ error: err.message || 'Failed to get user' });
   }
 });
-
+// Test Supabase database connection
 app.get('/test-supabase', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -259,7 +259,7 @@ app.get('/test-supabase', async (req, res) => {
     });
   }
 });
-
+// Add room into database
 app.get('/add-room', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -288,7 +288,7 @@ app.get('/add-room', async (req, res) => {
     });
   }
 });
-
+// Get all music rooms
 app.get('/rooms', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -328,7 +328,7 @@ app.get('/rooms', async (req, res) => {
     res.status(500).json({ error: err.message || 'Failed to get rooms' });
   }
 });
-
+// Create a new music room
 app.post('/rooms', async (req, res) => {
   try {
     const { name, host_user_id, description, mood_tag } = req.body;
@@ -614,7 +614,7 @@ app.post('/rooms/:roomId/songs/bulk', async (req, res) => {
     res.status(500).json({ error: err.message || 'Failed to import songs' });
   }
 });
-
+// Delete a song from playlist
 app.delete('/songs/:songId', async (req, res) => {
   try {
     const { songId } = req.params;
@@ -632,14 +632,12 @@ app.delete('/songs/:songId', async (req, res) => {
 
     if (!canDeleteSong(user)) {
       return res.status(403).json({
-        error: 'Only premium users can delete songs'
+        error: 'Only admin users can delete songs'
       });
     }
-
     // Delete votes and scores first to satisfy foreign key constraints
     await supabase.from('votes').delete().eq('song_id', songId);
     await supabase.from('song_scores').delete().eq('song_id', songId);
-
     const { error } = await supabase
       .from('songs')
       .delete()
@@ -651,7 +649,7 @@ app.delete('/songs/:songId', async (req, res) => {
     return res.status(500).json({ error: err.message || 'Failed to delete song' });
   }
 });
-
+// Add upvote or downvote to a song
 app.post('/vote', async (req, res) => {
   try {
     const { song_id, user_id, vote_value } = req.body;
@@ -667,7 +665,6 @@ app.post('/vote', async (req, res) => {
         error: 'vote_value must be 1 or -1'
       });
     }
-
     const user = await getUser(user_id);
 
     if (!user) {
@@ -711,7 +708,7 @@ app.post('/vote', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
+// Delete a music room
 app.delete('/rooms/:roomId', async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -727,7 +724,7 @@ app.delete('/rooms/:roomId', async (req, res) => {
     return res.status(500).json({ error: err.message || 'Failed to delete room' });
   }
 });
-
+// Give a score rating to a song
 app.post('/score', async (req, res) => {
   try {
     const { song_id, user_id, score_value } = req.body;
@@ -776,9 +773,9 @@ app.post('/score', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-
+// Start backend server
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
-
+// Initialize extra database tables
 ensureExtraTables();
